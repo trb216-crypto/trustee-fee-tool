@@ -2,73 +2,68 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Chapter 7 Trustee Fee Calculator</title>
+  <title>Advanced Chapter 7 Trustee Fee Calculator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Helvetica Neue', sans-serif;
       padding: 40px;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
     }
     h1 {
-      font-size: 1.8rem;
+      font-size: 2rem;
+      margin-bottom: 10px;
     }
-    input, button {
+    input, button, select {
       font-size: 1rem;
       padding: 10px;
       margin: 10px 0;
       width: 100%;
     }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: 600;
+    }
     #result {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       margin-top: 20px;
+      background: #f7f7f7;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .code-ref {
+      font-size: 0.95rem;
+      margin-top: 20px;
+      padding: 15px;
+      background: #eef;
+      border-left: 4px solid #88c;
+      display: none;
     }
   </style>
 </head>
 <body>
   <h1>Chapter 7 Trustee Fee Calculator</h1>
+
   <label for="disbursement">Total Disbursements to Creditors ($):</label>
-  <input type="number" id="disbursement" placeholder="Enter total disbursed amount" />
-  <button onclick="calculateFee()">Calculate Trustee Fee</button>
-  <div id="result"></div>
+  <input type="number" id="disbursement" placeholder="Enter amount" />
 
-  <script>
-    function calculateFee() {
-      const amount = parseFloat(document.getElementById('disbursement').value);
-      if (isNaN(amount) || amount < 0) {
-        document.getElementById('result').innerText = 'Please enter a valid non-negative number.';
-        return;
-      }
+  <label>
+    <input type="checkbox" id="excludeSecured" />
+    Exclude Secured Creditor Payments
+  </label>
 
-      let fee = 0;
-      let remaining = amount;
+  <label>
+    <input type="checkbox" id="interimDist" />
+    Interim Distribution Only (might be lower in practice)
+  </label>
 
-      if (remaining > 0) {
-        const tier = Math.min(remaining, 5000);
-        fee += tier * 0.25;
-        remaining -= tier;
-      }
+  <label>
+    <input type="checkbox" id="customCapToggle" onchange="toggleCapInput()" />
+    Set Custom Max Fee Cap
+  </label>
+  <input type="number" id="customCap" placeholder="Custom cap in $" style="display: none;" />
 
-      if (remaining > 0) {
-        const tier = Math.min(remaining, 45000);
-        fee += tier * 0.10;
-        remaining -= tier;
-      }
-
-      if (remaining > 0) {
-        const tier = Math.min(remaining, 950000);
-        fee += tier * 0.05;
-        remaining -= tier;
-      }
-
-      if (remaining > 0) {
-        fee += remaining * 0.03;
-      }
-
-      document.getElementById('result').innerText = `Maximum Trustee Fee: $${fee.toFixed(2)}`;
-    }
-  </script>
-</body>
-</html>
-
+  <label>
+    <input type="checkbox" id="showLawToggle" onclick="toggleLaw()" />
