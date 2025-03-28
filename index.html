@@ -37,19 +37,13 @@
       margin-top: 20px;
       display: block;
     }
-    input[type="number"], input[type="checkbox"] {
+    input[type="number"] {
       padding: 10px;
       font-size: 1rem;
       margin-top: 8px;
       width: 100%;
       border-radius: 8px;
       border: 1px solid #ccc;
-    }
-    .toggle {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 15px;
     }
     button {
       background: #4f46e5;
@@ -82,9 +76,6 @@
       border-left: 4px solid #6366f1;
       border-radius: 8px;
     }
-    .breakdown-line {
-      margin-bottom: 6px;
-    }
     .case-law {
       margin-top: 20px;
       background: #f1f5f9;
@@ -92,6 +83,9 @@
       padding: 15px;
       border-radius: 8px;
       font-size: 0.95rem;
+    }
+    .breakdown-line {
+      margin-bottom: 6px;
     }
   </style>
 </head>
@@ -102,16 +96,11 @@
     <label for="disbursement">Total Disbursements to Creditors ($)</label>
     <input type="number" id="disbursement" placeholder="e.g., 250000" />
 
-    <div class="toggle">
-      <input type="checkbox" id="excludeSecured">
-      <label for="excludeSecured">Exclude estimated secured claims (20%)</label>
-    </div>
+    <label for="securedAmount">Secured Debt Paid from Estate ($)</label>
+    <input type="number" id="securedAmount" placeholder="e.g., 50000 (leave blank for $0)" />
 
-    <div class="toggle">
-      <input type="checkbox" id="useCap">
-      <label for="useCap">Apply custom fee cap</label>
-    </div>
-    <input type="number" id="customCap" placeholder="Enter custom cap in USD (optional)" style="display: none;"/>
+    <label for="customCap">Custom Trustee Fee Cap (Optional, $)</label>
+    <input type="number" id="customCap" placeholder="Enter custom cap (if any)" />
 
     <button onclick="calculateFee()">Calculate Trustee Fee</button>
 
@@ -128,32 +117,26 @@
 
     <div class="case-law">
       <strong>Relevant Case Law:</strong><br>
-      <em>In re McKinney</em>, 383 B.R. 490 (Bankr. N.D. Cal. 2008): Court emphasized strict application of statutory maximums under 11 U.S.C. § 326(a). Trustee compensation must adhere to the statutory tier system unless specifically adjusted by the court.<br><br>
-      <em>In re Biskup</em>, 236 B.R. 332 (Bankr. N.D. Ohio 1999): Courts have discretion to award less than the statutory maximum, but not more. Actual services rendered and benefit to the estate are relevant in awarding final compensation.
+      <em>In re McKinney</em>, 383 B.R. 490 (Bankr. N.D. Cal. 2008): Strict application of § 326(a) tiers unless reduced by court.<br><br>
+      <em>In re Biskup</em>, 236 B.R. 332 (Bankr. N.D. Ohio 1999): Trustee fees limited to statutory cap; actual benefit to estate considered.
     </div>
   </div>
 
   <script>
-    document.getElementById('useCap').addEventListener('change', function() {
-      const capInput = document.getElementById('customCap');
-      capInput.style.display = this.checked ? 'block' : 'none';
-    });
-
     function calculateFee() {
       let amount = parseFloat(document.getElementById('disbursement').value);
-      const excludeSecured = document.getElementById('excludeSecured').checked;
-      const useCap = document.getElementById('useCap').checked;
-      const capValue = parseFloat(document.getElementById('customCap').value);
+      let secured = parseFloat(document.getElementById('securedAmount').value);
+      let capValue = parseFloat(document.getElementById('customCap').value);
 
       if (isNaN(amount) || amount <= 0) {
         document.getElementById('result').innerHTML = '<strong>Please enter a valid disbursement amount.</strong>';
         return;
       }
 
-      if (excludeSecured) {
-        amount *= 0.8;
-      }
+      if (isNaN(secured)) secured = 0;
+      if (secured > amount) secured = amount;
 
+      let base = amount - secured;
       let fee = 0, breakdown = "";
       const brackets = [
         { limit: 5000, rate: 0.25 },
@@ -162,7 +145,7 @@
         { limit: Infinity, rate: 0.03 },
       ];
 
-      let remaining = amount;
+      let remaining = base;
       for (let b of brackets) {
         if (remaining <= 0) break;
         let tier = Math.min(remaining, b.limit);
@@ -172,14 +155,13 @@
         remaining -= tier;
       }
 
-      if (useCap && !isNaN(capValue)) {
-        if (fee > capValue) {
-          breakdown += `<div class="breakdown-line"><em>Fee capped at $${capValue.toFixed(2)}</em></div>`;
-          fee = capValue;
-        }
+      if (!isNaN(capValue) && capValue > 0 && fee > capValue) {
+        breakdown += `<div class="breakdown-line"><em>Fee capped at $${capValue.toFixed(2)}</em></div>`;
+        fee = capValue;
       }
 
       document.getElementById('result').innerHTML = `
+        <strong>Adjusted Disbursement Base (excluding secured):</strong> $${base.toFixed(2)}<br><br>
         <strong>Estimated Max Trustee Fee:</strong> $${fee.toFixed(2)}<br><br>
         <strong>Breakdown:</strong><br>${breakdown}
       `;
